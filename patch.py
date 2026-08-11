@@ -12,7 +12,7 @@ if spec and spec.submodule_search_locations:
     if config_path.exists():
         content = config_path.read_text()
         
-        if "SecretStr" not in content:
+        if "from pydantic import SecretStr" not in content:
             # Prepend the missing import to the top of the file
             patched_content = "from pydantic import SecretStr\n" + content
             config_path.write_text(patched_content)
