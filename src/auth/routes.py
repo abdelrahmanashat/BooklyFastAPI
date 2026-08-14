@@ -34,7 +34,7 @@ async def send_mail(emails:EmailModel):
     html = "<h1>Welcome to the app</h1>"
     subject = "Welcome to our app"
     #send_email.delay(emails, subject, html)
-    send_email(emails, subject, html)
+    await send_email(emails, subject, html)
     return {"message":"Email sent successfully"}
 
 @auth_router.post('/signup', status_code=status.HTTP_201_CREATED)
@@ -54,7 +54,7 @@ async def create_user_account(user_data:UserCreateModel, session:AsyncSession = 
     emails = [email]
     subject="Verify your email"
     #send_email.delay(emails, subject, html_message)
-    send_email(emails, subject, html_message)
+    await send_email(emails, subject, html_message)
     
     return {
         "message" : f"Account Created! Check your email: {email} to verify your account",
@@ -165,7 +165,7 @@ async def password_reset_request(email_data:PasswordResetRequestModel, session:A
     emails = [email]
     subject="Password Reset Request"
     #send_email.delay(emails, subject, html_message)
-    send_email(emails, subject, html_message)
+    await send_email(emails, subject, html_message)
     
     return JSONResponse(content={"message" : f"Check your email: {email} to confirm password reset"},
                         status_code=status.HTTP_200_OK)
