@@ -54,11 +54,13 @@ class EmailModel(BaseModel):
     addresses: list[str]
     model_config = {
             "json_schema_extra": {
-                "example": [
-                    "johndoe123@co.com",
-                    "alansherer@co.com",
-                    "marado2@abc.efg",
+                "example": {
+                    "addresses" : [
+                        "johndoe123@co.com",
+                        "alansherer@co.com",
+                        "marado2@abc.efg",
                     ]
+                }   
             }
         }
     

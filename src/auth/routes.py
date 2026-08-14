@@ -6,7 +6,7 @@ from datetime import timedelta, datetime
 
 from src.db.main import get_session
 from src.db.redis import add_jti_to_blocklist
-from src.mail import mail, create_message
+from src.mail_non_celery import send_email_via_api
 #from src.celery_tasks import send_email
 
 from .schemas import (UserCreateModel, 
@@ -34,9 +34,8 @@ async def send_mail(emails:EmailModel, bg_tasks: BackgroundTasks):
     emails = emails.addresses
     html_message = "<h1>Welcome to the app</h1>"
     subject = "Welcome to our app"
-    #send_email.delay(emails, subject, html)
-    message = create_message(recipients=emails, subject=subject, body=html_message)
-    bg_tasks.add_task(mail.send_message, message)
+    #send_email.delay(emails, subject, html_message)
+    bg_tasks.add_task(send_email_via_api, emails, subject, html_message)
     return {"message":"Email sent successfully"}
 
 @auth_router.post('/signup', status_code=status.HTTP_201_CREATED)
@@ -56,8 +55,7 @@ async def create_user_account(user_data:UserCreateModel, bg_tasks: BackgroundTas
     emails = [email]
     subject="Verify your email"
     #send_email.delay(emails, subject, html_message)
-    message = create_message(recipients=emails, subject=subject, body=html_message)
-    bg_tasks.add_task(mail.send_message, message)
+    bg_tasks.add_task(send_email_via_api, emails, subject, html_message)
     
     return {
         "message" : f"Account Created! Check your email: {email} to verify your account",
@@ -168,8 +166,7 @@ async def password_reset_request(email_data:PasswordResetRequestModel, bg_tasks:
     emails = [email]
     subject="Password Reset Request"
     #send_email.delay(emails, subject, html_message)
-    message = create_message(recipients=emails, subject=subject, body=html_message)
-    bg_tasks.add_task(mail.send_message, message)
+    bg_tasks.add_task(send_email_via_api, emails, subject, html_message)
     
     return JSONResponse(content={"message" : f"Check your email: {email} to confirm password reset"},
                         status_code=status.HTTP_200_OK)
