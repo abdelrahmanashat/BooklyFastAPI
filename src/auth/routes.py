@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -6,7 +6,8 @@ from datetime import timedelta, datetime
 
 from src.db.main import get_session
 from src.db.redis import add_jti_to_blocklist
-from src.celery_tasks import send_email
+from src.mail import mail, create_message
+#from src.celery_tasks import send_email
 
 from .schemas import (UserCreateModel, 
                       UserLoginModel, 
@@ -29,16 +30,17 @@ role_checker = RoleChecker(['admin','user'])
 REFRESH_TOKEN_EXPIRY = 2
 
 @auth_router.post('/send_mail')
-async def send_mail(emails:EmailModel):
+async def send_mail(emails:EmailModel, bg_tasks: BackgroundTasks):
     emails = emails.addresses
-    html = "<h1>Welcome to the app</h1>"
+    html_message = "<h1>Welcome to the app</h1>"
     subject = "Welcome to our app"
     #send_email.delay(emails, subject, html)
-    await send_email(emails, subject, html)
+    message = create_message(recipients=emails, subject=subject, body=html_message)
+    bg_tasks.add_task(mail.send_message, message)
     return {"message":"Email sent successfully"}
 
 @auth_router.post('/signup', status_code=status.HTTP_201_CREATED)
-async def create_user_account(user_data:UserCreateModel, session:AsyncSession = Depends(get_session)):
+async def create_user_account(user_data:UserCreateModel, bg_tasks: BackgroundTasks, session:AsyncSession = Depends(get_session)):
     email = user_data.email
     user_exists = await user_service.user_exists(email, session)
     if user_exists: 
@@ -54,7 +56,8 @@ async def create_user_account(user_data:UserCreateModel, session:AsyncSession = 
     emails = [email]
     subject="Verify your email"
     #send_email.delay(emails, subject, html_message)
-    await send_email(emails, subject, html_message)
+    message = create_message(recipients=emails, subject=subject, body=html_message)
+    bg_tasks.add_task(mail.send_message, message)
     
     return {
         "message" : f"Account Created! Check your email: {email} to verify your account",
@@ -150,7 +153,7 @@ async def revoke_token(token_details:dict=Depends(AccessTokenBearer())):
     )
     
 @auth_router.post('/password-reset-request')
-async def password_reset_request(email_data:PasswordResetRequestModel, session:AsyncSession = Depends(get_session)):
+async def password_reset_request(email_data:PasswordResetRequestModel, bg_tasks: BackgroundTasks, session:AsyncSession = Depends(get_session)):
     email = email_data.email
     user_exists = await user_service.user_exists(email, session)
     if not user_exists: 
@@ -165,7 +168,8 @@ async def password_reset_request(email_data:PasswordResetRequestModel, session:A
     emails = [email]
     subject="Password Reset Request"
     #send_email.delay(emails, subject, html_message)
-    await send_email(emails, subject, html_message)
+    message = create_message(recipients=emails, subject=subject, body=html_message)
+    bg_tasks.add_task(mail.send_message, message)
     
     return JSONResponse(content={"message" : f"Check your email: {email} to confirm password reset"},
                         status_code=status.HTTP_200_OK)
