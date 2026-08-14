@@ -8,7 +8,7 @@ def send_email_via_api(recipients:list[str], subject:str, body:str):
         "Content-Type": "application/json"
     }
     data = {
-        "from": f"{Config.MAIL_USERNAME} <{Config.MAIL_FROM}>",
+        "from": f"{Config.MAIL_FROM_NAME} <{Config.MAIL_FROM}>",
         "to": recipients,
         "subject": subject,
         "html": body
